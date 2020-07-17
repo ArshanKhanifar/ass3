@@ -1,0 +1,7 @@
+*.class
+out
+.idea
+*.iml
+gen-java
+.nfs*
+.DS_Store
