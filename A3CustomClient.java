@@ -1,27 +1,29 @@
-import java.io.*;
-import java.net.*;
-import java.util.*;
-import java.util.concurrent.atomic.*;
-
-import org.apache.thrift.*;
-import org.apache.thrift.transport.*;
-import org.apache.thrift.protocol.*;
-
-import org.apache.zookeeper.*;
-import org.apache.zookeeper.data.*;
-import org.apache.curator.*;
-import org.apache.curator.retry.*;
-import org.apache.curator.framework.*;
-import org.apache.curator.framework.api.*;
-
-import org.apache.log4j.*;
-
 import ca.uwaterloo.watca.ExecutionLogger;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.CuratorWatcher;
+import org.apache.curator.retry.RetryNTimes;
+import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.Logger;
+import org.apache.thrift.TException;
+import org.apache.thrift.protocol.TBinaryProtocol;
+import org.apache.thrift.protocol.TProtocol;
+import org.apache.thrift.transport.TFramedTransport;
+import org.apache.thrift.transport.TSocket;
+import org.apache.thrift.transport.TTransport;
+import org.apache.zookeeper.WatchedEvent;
+
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
-public class A3Client implements CuratorWatcher {
+public class A3CustomClient implements CuratorWatcher {
     static Logger log;
-    
+
     String zkConnectString;
     String zkNode;
     int numThreads;
@@ -40,9 +42,9 @@ public class A3Client implements CuratorWatcher {
 	    }
 
 	    BasicConfigurator.configure();
-	    log = Logger.getLogger(A3Client.class.getName());
+	    log = Logger.getLogger(A3CustomClient.class.getName());
 
-	    A3Client client = new A3Client(args[0], args[1], Integer.parseInt(args[2]), Integer.parseInt(args[3]), Integer.parseInt(args[4]));
+	    A3CustomClient client = new A3CustomClient(args[0], args[1], Integer.parseInt(args[2]), Integer.parseInt(args[3]), Integer.parseInt(args[4]));
 
 	    try {
 	        client.start();
@@ -54,7 +56,7 @@ public class A3Client implements CuratorWatcher {
 	    }
     }
 
-    A3Client(String zkConnectString, String zkNode, int numThreads, int numSeconds, int keySpaceSize) {
+    A3CustomClient(String zkConnectString, String zkNode, int numThreads, int numSeconds, int keySpaceSize) {
 	    this.zkConnectString = zkConnectString;
 	    this.zkNode = zkNode;
 	    this.numThreads = numThreads;
@@ -111,8 +113,8 @@ public class A3Client implements CuratorWatcher {
     }
 
     void stop() {
-	    curClient.close();
-	    exlog.stop();
+	curClient.close();
+	exlog.stop();
     }
 
     InetSocketAddress getPrimary() throws Exception {

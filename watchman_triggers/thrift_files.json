@@ -1,0 +1,10 @@
+[
+  "trigger",
+  "/Users/arshankhanifar/ece_454_assignment_3",
+  {
+    "name": "thrift_files",
+    "expression": ["match", "**/*.thrift", "wholename"],
+    "command": ["./arshans_scripts/update_remote.sh"],
+    "stdin": "NAME_PER_LINE"
+  }
+]
