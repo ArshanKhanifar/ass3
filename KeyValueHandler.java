@@ -14,14 +14,21 @@ import org.apache.log4j.*;
 public class KeyValueHandler implements KeyValueService.Iface {
     static Logger log;
 
+    private KeyValueService.Client primary_client = null;
+    private KeyValueService.Client backup_client = null;
     private Map<String, String> myMap;
     private CuratorFramework curClient;
     private String zkNode;
     private String host;
     private Map<String, String> bucket;
-    private static final int BATCH_SIZE = 100;
+    private static final int BATCH_SIZE = 5;
     private int port;
     private boolean same = true;
+
+    public void update_clients() {
+        this.primary_client = null;
+        this.backup_client = null;
+    }
 
     public KeyValueHandler(String host, int port, CuratorFramework curClient, String zkNode) {
 	    this.host = host;
@@ -50,7 +57,7 @@ public class KeyValueHandler implements KeyValueService.Iface {
         }
         List<String> keys = new ArrayList<String>(myMap.keySet());
         List<String> values = new ArrayList<String >(myMap.values());
-        KeyValueService.Client client = get_client(Context.backup_address);
+        KeyValueService.Client client = get_backup_client();
         client.debug_get_everything_from_primary(keys, values);
     }
 
@@ -118,12 +125,12 @@ public class KeyValueHandler implements KeyValueService.Iface {
             log.debug("Sync thread running");
             try {
                 while (true) {
-                    Thread.sleep(100);
+                    Thread.sleep(0);
                     if (Context.type == NodeType.BACKUP || Context.backup_address == null) {
                         continue;
                     }
+                    //log.debug("sending to backup");
                     send_batch_to_backup(get_batch());
-                    //log.debug("updating: " + Context.type);
                 }
             } catch (Exception x) {
                 x.printStackTrace();
@@ -148,8 +155,24 @@ public class KeyValueHandler implements KeyValueService.Iface {
     }
 
     public void update_backup(String key, String value) throws TException {
-        KeyValueService.Client client = get_client(Context.backup_address);
+        KeyValueService.Client client = get_backup_client();
         client.put(key, value);
+    }
+
+    public KeyValueService.Client get_primary_client() throws TException {
+        if (primary_client != null) {
+            return primary_client;
+        }
+        primary_client = get_client(Context.primary_address);
+        return primary_client;
+    }
+
+    public KeyValueService.Client get_backup_client() throws TException {
+        if (backup_client != null) {
+            return backup_client;
+        }
+        backup_client = get_client(Context.backup_address);
+        return backup_client;
     }
 
     public KeyValueService.Client get_client(InetSocketAddress address) throws TTransportException {
@@ -161,7 +184,7 @@ public class KeyValueHandler implements KeyValueService.Iface {
     }
 
     public void copy_values_to_backup(List<String> keys, List<String> values) throws TTransportException, TException {
-        KeyValueService.Client client = get_client(Context.backup_address);
+        KeyValueService.Client client = get_backup_client();
         //log.info("copying to backup");
         client.receive_values_from_primary(keys, values);
         //log.info("done copying to backup");

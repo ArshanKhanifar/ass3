@@ -62,6 +62,7 @@ class ZNodeManager {
     }
 
     void become_primary_if_one_node_exists() throws Exception {
+        Context.handler.update_clients();
         List<String> children = get_children();
         Context.primary_address = _get_address(children.get(0));
         if (children.size() == 1) {
