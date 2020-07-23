@@ -91,7 +91,7 @@ public class KeyValueHandler implements KeyValueService.Iface {
     }
 
     public void start_threads() {
-        new Thread(new DebugMonitor()).start();
+        //new Thread(new DebugMonitor()).start();
         new Thread(new SyncThread()).start();
     }
 
@@ -138,7 +138,7 @@ public class KeyValueHandler implements KeyValueService.Iface {
         }
     }
     public void send_batch_to_backup(ArrayList<ArrayList<String>> batch)
-        throws org.apache.thrift.TException {
+        throws TException {
         //log.debug("Batch Size: " + batch.get(0).size());
         if (batch.get(0).size() == 0) {
             return;
@@ -146,7 +146,7 @@ public class KeyValueHandler implements KeyValueService.Iface {
         copy_values_to_backup(batch.get(0), batch.get(1));
     }
 
-    public void put(String key, String value) throws org.apache.thrift.TException {
+    public void put(String key, String value) throws TException {
 	    myMap.put(key, value);
 	    if (Context.type == NodeType.PRIMARY) {
             bucket.put(key, value);
@@ -185,9 +185,7 @@ public class KeyValueHandler implements KeyValueService.Iface {
 
     public void copy_values_to_backup(List<String> keys, List<String> values) throws TTransportException, TException {
         KeyValueService.Client client = get_backup_client();
-        //log.info("copying to backup");
         client.receive_values_from_primary(keys, values);
-        //log.info("done copying to backup");
     }
 
     public void copy_everything_to_backup() throws TTransportException, TException {
@@ -197,10 +195,8 @@ public class KeyValueHandler implements KeyValueService.Iface {
     }
 
     public void receive_values_from_primary(List<String> keys, List<String> values) throws org.apache.thrift.TException {
-        //log.info("backup started");
         for (int i = 0; i < keys.size(); i++) {
             myMap.put(keys.get(i), values.get(i));
         }
-        //log.info("backup completed, inserted " + keys.size() + " keys");
     }
 }
